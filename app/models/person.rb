@@ -1,21 +1,18 @@
 class Person < ActiveRecord::Base
 	extend Enumerize
-	validates :age, :presence => true, :numericality => {:greater_than => 0}
+	validates :age, :presence => true, :numericality => { :greater_than => 0, message: 'Age must be greater than 0' }
 
-
-	has_many :childrens, 				foreign_key: 'parent_id' 
-	has_many :sons, 						-> { where( gender: 'male' )} , foreign_key: 'parent_id'
-	has_many :daughters, 				-> { where( gender: 'female' )}, foreign_key: 'parent_id'
-
-	has_one  :married,					foreign_key: 'married_id', class_name: 'Person' 
-	has_many :parents, 					-> (person){ joins(:married) }, primary_key: :parent_id, foreign_key: :id 
-
-	has_one	 :mother, 					-> { where( gender: 'female' )}, primary_key: :parent_id, foreign_key: :id 
-	has_one  :father, 					-> { where( gender: 'male' )}, primary_key: :parent_id, foreign_key: :id 
-
-	before_save :check_age
+	has_many :child_rls,  		class_name: 'Relationship', :foreign_key => 'parent_id'
+	has_many :parent_rls,  		class_name: 'Relationship', :foreign_key => 'children_id'
+	has_many :children, 			through: :child_rls, 	source: :children
+	has_many :parents, 				through: :parent_rls, source: :parent
+	has_many :sons, 					-> { where( gender: 'male') }, through: :child_rls, 	source: :children
+	has_many :daughter, 			-> { where( gender: 'female') }, through: :child_rls, 	source: :children
+	has_many :father, 				-> { where( gender: 'male') }, through: :parent_rls, source: :parent
+	has_many :mother,		 			-> { where( gender: 'female') }, through: :parent_rls, source: :parent
 
 	enumerize :gender, in: [:male, :female]
+	before_save :age_condition
 
 	def fullname
 		name.split(' ')
@@ -33,13 +30,27 @@ class Person < ActiveRecord::Base
 		age - user.age
 	end
 
-	def father_of?(user)
-		return true if user.father.present? && user.father.id = id
-		false
+	def brother_of?(user)  
+		begin
+			parents.children.find(user.id)
+	  rescue ActiveRecord::RecordNotFound
+	    return false
+		end
+		true
+	end	
+
+	def father_of?(user)  
+		begin
+			children.find(user.id)
+	  rescue ActiveRecord::RecordNotFound
+	    return false
+		end
+		true
 	end
 
-	def brother_of?(user)
-		return true if user.father.present? && father.present? && user.father.id = father.id
-		false
+	protected
+
+	def age_condition
+		raise 'Age must be greater than 0' if age < 1
 	end
 end

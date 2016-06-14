@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160608031735) do
+ActiveRecord::Schema.define(version: 20160614035703) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -20,13 +20,18 @@ ActiveRecord::Schema.define(version: 20160608031735) do
     t.string   "name"
     t.integer  "age"
     t.string   "gender"
-    t.integer  "married_id"
-    t.integer  "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  add_index "people", ["married_id"], name: "index_people_on_married_id", using: :btree
-  add_index "people", ["parent_id"], name: "index_people_on_parent_id", using: :btree
+  create_table "relationships", force: :cascade do |t|
+    t.integer  "children_id"
+    t.integer  "parent_id"
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+
+  add_index "relationships", ["children_id"], name: "index_relationships_on_children_id", using: :btree
+  add_index "relationships", ["parent_id"], name: "index_relationships_on_parent_id", using: :btree
 
 end
